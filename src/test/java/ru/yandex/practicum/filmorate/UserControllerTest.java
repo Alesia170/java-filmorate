@@ -1,27 +1,35 @@
 package ru.yandex.practicum.filmorate;
 
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
+import jakarta.validation.ValidatorFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import ru.yandex.practicum.filmorate.controller.UserController;
 import ru.yandex.practicum.filmorate.exception.*;
 import ru.yandex.practicum.filmorate.model.User;
-import ru.yandex.practicum.filmorate.validator.UserValidator;
+import ru.yandex.practicum.filmorate.validator.Marker;
 
 import java.time.LocalDate;
 import java.util.Collection;
+import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class UserControllerTest {
+
+    private static Validator validator;
     UserController controller;
     User user;
 
     @BeforeEach
     void setUp() {
-        UserValidator userValidator = new UserValidator();
-        controller = new UserController(userValidator);
+        ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
+        validator = validatorFactory.getValidator();
+
+        controller = new UserController();
 
         user = new User();
         user.setEmail("@Email");
@@ -35,12 +43,11 @@ public class UserControllerTest {
     void shouldNotCreateEmailEmpty() {
         user.setEmail("  ");
 
-        ValidationException exception = assertThrows(
-                ValidationException.class,
-                () -> controller.create(user)
-        );
+        Set<ConstraintViolation<User>> violations = validator.validate(user, Marker.OnCreate.class);
 
-        assertEquals("Электронная почта не может быть пустой и должна содержать символ @", exception.getMessage());
+        assertTrue(violations.stream()
+                .anyMatch(violation -> violation.getMessage()
+                        .contains("Электронная почта не может быть пустой")));
     }
 
     @Test
@@ -67,12 +74,11 @@ public class UserControllerTest {
     void shouldThrowIfLoginEmpty() {
         user.setLogin("   ");
 
-        ValidationException exception = assertThrows(
-                ValidationException.class,
-                () -> controller.create(user)
-        );
+        Set<ConstraintViolation<User>> violations = validator.validate(user, Marker.OnCreate.class);
 
-        assertEquals("Логин не может быть пустым и содержать пробелы", exception.getMessage());
+        assertTrue(violations.stream()
+                .anyMatch(violation -> violation.getMessage()
+                        .contains("Логин не может быть пустым и содержать пробелы")));
     }
 
     @Test
@@ -90,12 +96,11 @@ public class UserControllerTest {
     void shouldThrowIdDateBirthdayFromFuture() {
         user.setBirthday(LocalDate.of(2030, 10, 11));
 
-        ValidationException exception = assertThrows(
-                ValidationException.class,
-                () -> controller.create(user)
-        );
+        Set<ConstraintViolation<User>> violations = validator.validate(user, Marker.OnCreate.class);
 
-        assertEquals("Дата рождения не может быть в будущем", exception.getMessage());
+        assertTrue(violations.stream()
+                .anyMatch(violation -> violation.getMessage()
+                        .contains("Дата рождения не может быть в будущем")));
     }
 
     @Test
@@ -103,12 +108,11 @@ public class UserControllerTest {
     void shouldThrowIfIdIsNull() {
         user.setId(null);
 
-        ValidationException exception = assertThrows(
-                ValidationException.class,
-                () -> controller.update(user)
-        );
+        Set<ConstraintViolation<User>> violations = validator.validate(user, Marker.OnUpdate.class);
 
-        assertEquals("Id должен быть указан", exception.getMessage());
+        assertTrue(violations.stream()
+                .anyMatch(violation -> violation.getMessage()
+                        .contains("Id должен быть указан")));
     }
 
     @Test
@@ -125,23 +129,15 @@ public class UserControllerTest {
     }
 
     @Test
-    @DisplayName("Обновление должно завершиться ошибкой при некорректной электронной почты")
-    void shouldNotUpdateUserWithoutEmail() {
-        User created = controller.create(user);
+    @DisplayName("Создание email должно завершиться ошибкой при некорректной почте")
+    void shouldThrowIfEmailWrong() {
+        user.setEmail("это-неправильный?эмейл@");
 
-        User update = new User();
-        update.setId(created.getId());
-        update.setEmail("   ");
-        update.setLogin("Login");
-        update.setName("Name");
-        update.setBirthday(LocalDate.of(2000, 12, 12));
+        Set<ConstraintViolation<User>> violations = validator.validate(user, Marker.OnCreate.class);
 
-        ValidationException exception = assertThrows(
-                ValidationException.class,
-                () -> controller.update(update)
-        );
-
-        assertEquals("Электронная почта не может быть пустой и должна содержать символ @", exception.getMessage());
+        assertTrue(violations.stream()
+                .anyMatch(violation -> violation.getMessage()
+                        .contains("Неверный формат email")));
     }
 
     @Test

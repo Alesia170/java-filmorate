@@ -1,27 +1,32 @@
 package ru.yandex.practicum.filmorate;
 
+import jakarta.validation.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import ru.yandex.practicum.filmorate.controller.FilmController;
-import ru.yandex.practicum.filmorate.exception.*;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.validator.FilmValidator;
+import ru.yandex.practicum.filmorate.validator.Marker;
 
 import java.time.LocalDate;
 import java.util.Collection;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 public class FilmControllerTest {
 
+    private static Validator validator;
     FilmController controller;
     Film film;
 
     @BeforeEach
     void setUp() {
-        FilmValidator filmValidator = new FilmValidator();
-        controller = new FilmController(filmValidator);
+        ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
+        validator = validatorFactory.getValidator();
+
+        controller = new FilmController();
 
         film = new Film();
         film.setName("Film");
@@ -35,12 +40,10 @@ public class FilmControllerTest {
     void shouldNotCreateFilmWithoutName() {
         film.setName("  ");
 
-        ValidationException exception = assertThrows(
-                ValidationException.class,
-                () -> controller.create(film)
-        );
+        Set<ConstraintViolation<Film>> violations = validator.validate(film, Marker.OnCreate.class);
 
-        assertEquals("Название фильма не может быть пустым", exception.getMessage());
+        assertTrue(violations.stream()
+                .anyMatch(violation -> violation.getMessage().contains("Название фильма не может быть пустым")));
     }
 
     @Test
@@ -48,12 +51,10 @@ public class FilmControllerTest {
     void shouldThrowIfDescriptionTooLong() {
         film.setDescription("Description".repeat(90));
 
-        ValidationException exception = assertThrows(
-                ValidationException.class,
-                () -> controller.create(film)
-        );
+        Set<ConstraintViolation<Film>> violations = validator.validate(film, Marker.OnCreate.class);
 
-        assertEquals("Максимальная длина описания 200 символов", exception.getMessage());
+        assertTrue(violations.stream()
+                .anyMatch(violation -> violation.getMessage().contains("Максимальная длина описания 200 символов")));
     }
 
     @Test
@@ -61,12 +62,10 @@ public class FilmControllerTest {
     void shouldThrowIfDateReleaseTooEarly() {
         film.setReleaseDate(LocalDate.of(1800, 1, 1));
 
-        ValidationException exception = assertThrows(
-                ValidationException.class,
-                () -> controller.create(film)
-        );
+        Set<ConstraintViolation<Film>> violations = validator.validate(film, Marker.OnCreate.class);
 
-        assertEquals("Дата релиза не может быть раньше 28 декабря 1895 года", exception.getMessage());
+        assertTrue(violations.stream()
+                .anyMatch(violation -> violation.getMessage().contains("Дата релиза не может быть раньше 28 декабря 1895 года")));
     }
 
     @Test
@@ -74,12 +73,10 @@ public class FilmControllerTest {
     void shouldThrowIfDurationInvalid() {
         film.setDuration(-1);
 
-        ValidationException exception = assertThrows(
-                ValidationException.class,
-                () -> controller.create(film)
-        );
+        Set<ConstraintViolation<Film>> violations = validator.validate(film, Marker.OnCreate.class);
 
-        assertEquals("Продолжительность фильма должна быть положительным числом", exception.getMessage());
+        assertTrue(violations.stream()
+                .anyMatch(violation -> violation.getMessage().contains("Продолжительность фильма должна быть положительным числом")));
     }
 
     @Test
@@ -87,12 +84,10 @@ public class FilmControllerTest {
     void shouldThrowIfIdIsNull() {
         film.setId(null);
 
-        ValidationException exception = assertThrows(
-                ValidationException.class,
-                () -> controller.update(film)
-        );
+        Set<ConstraintViolation<Film>> violations = validator.validate(film, Marker.OnUpdate.class);
 
-        assertEquals("Id должен быть указан", exception.getMessage());
+        assertTrue(violations.stream()
+                .anyMatch(violation -> violation.getMessage().contains("Id должен быть указан")));
     }
 
     @Test
@@ -100,32 +95,10 @@ public class FilmControllerTest {
     void shouldThrowIfIdDoesNotExist() {
         film.setId(100L);
 
-        NotFoundException exception = assertThrows(
-                NotFoundException.class,
-                () -> controller.update(film)
-        );
+        NotFoundException exception = assertThrows(NotFoundException.class,
+                () -> controller.update(film));
 
         assertEquals("Фильм с id = " + film.getId() + " не найден", exception.getMessage());
-    }
-
-    @Test
-    @DisplayName("Обновление должно завершиться ошибкой при некорректном имени")
-    void shouldNotUpdateFilmWithoutName() {
-        Film created = controller.create(film);
-
-        Film update = new Film();
-        update.setId(created.getId());
-        update.setName("   ");
-        update.setDescription("Description");
-        update.setReleaseDate(LocalDate.now());
-        update.setDuration(60);
-
-        ValidationException exception = assertThrows(
-                ValidationException.class,
-                () -> controller.update(update)
-        );
-
-        assertEquals("Название фильма не может быть пустым", exception.getMessage());
     }
 
     @Test

@@ -2,6 +2,7 @@ package ru.yandex.practicum.filmorate.controller;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -10,9 +11,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import ru.yandex.practicum.filmorate.exception.DuplicatedDataException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
-import ru.yandex.practicum.filmorate.validator.UserValidator;
+import ru.yandex.practicum.filmorate.validator.Marker;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -33,11 +33,6 @@ public class UserController {
     private final Map<Long, User> users = new HashMap<>();
 
     /**
-     * Валидатор данных пользователя.
-     */
-    private final UserValidator userValidator;
-
-    /**
      * Возвращает список всех пользователей.
      *
      * @return коллекция пользователей.
@@ -54,9 +49,8 @@ public class UserController {
      * @return созданный пользователь.
      */
     @PostMapping
-    public User create(@RequestBody User user) {
+    public User create(@RequestBody @Validated(Marker.OnCreate.class) User user) {
         log.info("Создание пользователя: {}", user);
-        userValidator.validate(user);
 
         boolean emailExists = users.values()
                 .stream()
@@ -64,6 +58,10 @@ public class UserController {
 
         if (emailExists) {
             throw new DuplicatedDataException("Эта электронная почта уже используется");
+        }
+
+        if (user.getName() == null || user.getName().isBlank()) {
+            user.setName(user.getLogin());
         }
 
         user.setId(getNextId());
@@ -79,12 +77,8 @@ public class UserController {
      * @return обновлённый пользователь.
      */
     @PutMapping
-    public User update(@RequestBody User user) {
+    public User update(@RequestBody @Validated(Marker.OnUpdate.class) User user) {
         log.info("Обновление данных пользователя: {}", user);
-
-        if (user.getId() == null) {
-            throw new ValidationException("Id должен быть указан");
-        }
 
         User oldUser = users.get(user.getId());
 
@@ -92,22 +86,31 @@ public class UserController {
             throw new NotFoundException("Пользователь с id = " + user.getId() + " не найден");
         }
 
-        userValidator.validate(user);
+        if (oldUser.getEmail() != null) {
+            boolean emailExists = users.values()
+                    .stream()
+                    .anyMatch(exisitnigUser ->
+                            exisitnigUser.getEmail().equals(user.getEmail())
+                                    && !exisitnigUser.getId().equals(user.getId()));
 
-        boolean emailExists = users.values()
-                .stream()
-                .anyMatch(exisitnigUser ->
-                        exisitnigUser.getEmail().equals(user.getEmail())
-                                && !exisitnigUser.getId().equals(user.getId()));
+            if (emailExists) {
+                throw new DuplicatedDataException("Этот email уже используется");
+            }
 
-        if (emailExists) {
-            throw new DuplicatedDataException("Этот имейл уже используется");
+            oldUser.setEmail(user.getEmail());
         }
 
-        oldUser.setEmail(user.getEmail());
-        oldUser.setBirthday(user.getBirthday());
-        oldUser.setLogin(user.getLogin());
-        oldUser.setName(user.getName());
+        if (user.getLogin() != null) {
+            oldUser.setLogin(user.getLogin());
+        }
+
+        if (user.getName() != null) {
+            oldUser.setName(user.getName());
+        }
+
+        if (user.getBirthday() != null) {
+            oldUser.setBirthday(user.getBirthday());
+        }
 
         log.info("Обновление пользователя id={} прошло успешно", oldUser.getId());
         return oldUser;
