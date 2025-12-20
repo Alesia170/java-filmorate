@@ -77,4 +77,10 @@ public class ErrorHandlingControllerAdvice {
     public ErrorResponse handleDuplicated(DuplicatedDataException e) {
         return new ErrorResponse(e.getMessage());
     }
+
+    @ExceptionHandler(Throwable.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public ErrorResponse handleException(Throwable e) {
+        return new ErrorResponse("Произошла непредвиденная ошибка");
+    }
 }
