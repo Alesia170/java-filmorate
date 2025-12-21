@@ -10,6 +10,8 @@ import ru.yandex.practicum.filmorate.validator.Marker;
 import ru.yandex.practicum.filmorate.validator.release.ValidReleaseDate;
 
 import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Модель данных фильма.
@@ -49,4 +51,6 @@ public class Film {
     @Positive(message = "Продолжительность фильма должна быть положительным числом",
             groups = {Marker.OnCreate.class, Marker.OnUpdate.class})
     private Integer duration;
+
+    private Set<Long> likes = new HashSet<>();
 }

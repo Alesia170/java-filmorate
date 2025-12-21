@@ -1,36 +1,24 @@
 package ru.yandex.practicum.filmorate.controller;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import ru.yandex.practicum.filmorate.exception.DuplicatedDataException;
-import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.service.UserService;
 import ru.yandex.practicum.filmorate.validator.Marker;
 
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 
 /**
  * Контроллер для операций с пользователями.
  */
-@Slf4j
 @RestController
 @RequestMapping("/users")
 @RequiredArgsConstructor
 public class UserController {
 
-    /**
-     * Хранилище пользователей.
-     */
-    private final Map<Long, User> users = new HashMap<>();
+    private final UserService userService;
 
     /**
      * Возвращает список всех пользователей.
@@ -39,7 +27,7 @@ public class UserController {
      */
     @GetMapping
     public Collection<User> getAll() {
-        return users.values();
+        return userService.getAll();
     }
 
     /**
@@ -50,24 +38,12 @@ public class UserController {
      */
     @PostMapping
     public User create(@RequestBody @Validated(Marker.OnCreate.class) User user) {
-        log.info("Создание пользователя: {}", user);
+        return userService.create(user);
+    }
 
-        boolean emailExists = users.values()
-                .stream()
-                .anyMatch(exisitnigUser -> exisitnigUser.getEmail().equals(user.getEmail()));
-
-        if (emailExists) {
-            throw new DuplicatedDataException("Эта электронная почта уже используется");
-        }
-
-        if (user.getName() == null || user.getName().isBlank()) {
-            user.setName(user.getLogin());
-        }
-
-        user.setId(getNextId());
-        users.put(user.getId(), user);
-        log.info("Пользователь успешно создан: id = {}", user.getId());
-        return user;
+    @DeleteMapping("/{id}")
+    public void delete(@PathVariable Long id) {
+        userService.delete(id);
     }
 
     /**
@@ -78,55 +54,29 @@ public class UserController {
      */
     @PutMapping
     public User update(@RequestBody @Validated(Marker.OnUpdate.class) User user) {
-        log.info("Обновление данных пользователя: {}", user);
-
-        User oldUser = users.get(user.getId());
-
-        if (oldUser == null) {
-            throw new NotFoundException("Пользователь с id = " + user.getId() + " не найден");
-        }
-
-        if (oldUser.getEmail() != null) {
-            boolean emailExists = users.values()
-                    .stream()
-                    .anyMatch(exisitnigUser ->
-                            exisitnigUser.getEmail().equals(user.getEmail())
-                                    && !exisitnigUser.getId().equals(user.getId()));
-
-            if (emailExists) {
-                throw new DuplicatedDataException("Этот email уже используется");
-            }
-
-            oldUser.setEmail(user.getEmail());
-        }
-
-        if (user.getLogin() != null) {
-            oldUser.setLogin(user.getLogin());
-        }
-
-        if (user.getName() != null) {
-            oldUser.setName(user.getName());
-        }
-
-        if (user.getBirthday() != null) {
-            oldUser.setBirthday(user.getBirthday());
-        }
-
-        log.info("Обновление пользователя id={} прошло успешно", oldUser.getId());
-        return oldUser;
+        return userService.update(user);
     }
 
-    /**
-     * Генерирует новый уникальный идентификатор.
-     *
-     * @return id.
-     */
-    private long getNextId() {
-        long currentMaxId = users.keySet()
-                .stream()
-                .mapToLong(id -> id)
-                .max()
-                .orElse(0);
-        return ++currentMaxId;
+    @PutMapping("/{id}/friends/{friendId}")
+    public void addFriend(@PathVariable Long id,
+                          @PathVariable Long friendId) {
+        userService.addFriends(id, friendId);
+    }
+
+    @DeleteMapping("/{id}/friends/{friendId}")
+    public void deleteFriend(@PathVariable Long id,
+                             @PathVariable Long friendId) {
+        userService.deleteFriend(id, friendId);
+    }
+
+    @GetMapping("/{id}/friends")
+    public List<User> getFriends(@PathVariable Long id) {
+        return userService.getFriends(id);
+    }
+
+    @GetMapping("/{id}/friends/common/{otherId}")
+    public List<User> getCommonFriends(@PathVariable Long id,
+                                       @PathVariable Long otherId) {
+        return userService.getCommonFriends(id, otherId);
     }
 }

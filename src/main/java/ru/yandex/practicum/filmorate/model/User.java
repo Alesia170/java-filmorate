@@ -6,6 +6,8 @@ import lombok.EqualsAndHashCode;
 import ru.yandex.practicum.filmorate.validator.Marker;
 
 import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Модель данных пользователя.
@@ -46,4 +48,6 @@ public class User {
     @PastOrPresent(message = "Дата рождения не может быть в будущем",
             groups = {Marker.OnCreate.class, Marker.OnUpdate.class})
     private LocalDate birthday;
+
+    private Set<Long> friends = new HashSet<>();
 }

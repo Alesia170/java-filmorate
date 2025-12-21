@@ -4,9 +4,10 @@ import jakarta.validation.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import ru.yandex.practicum.filmorate.controller.FilmController;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
+import ru.yandex.practicum.filmorate.storage.film.InMemoryFilmStorage;
 import ru.yandex.practicum.filmorate.validator.Marker;
 
 import java.time.LocalDate;
@@ -18,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class FilmControllerTest {
 
     private static Validator validator;
-    FilmController controller;
+    FilmStorage filmStorage;
     Film film;
 
     @BeforeEach
@@ -26,7 +27,7 @@ public class FilmControllerTest {
         ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
         validator = validatorFactory.getValidator();
 
-        controller = new FilmController();
+        filmStorage = new InMemoryFilmStorage();
 
         film = new Film();
         film.setName("Film");
@@ -96,7 +97,7 @@ public class FilmControllerTest {
         film.setId(100L);
 
         NotFoundException exception = assertThrows(NotFoundException.class,
-                () -> controller.update(film));
+                () -> filmStorage.update(film));
 
         assertEquals("Фильм с id = " + film.getId() + " не найден", exception.getMessage());
     }
@@ -115,10 +116,10 @@ public class FilmControllerTest {
         film2.setReleaseDate(LocalDate.now());
         film2.setDuration(90);
 
-        controller.create(film1);
-        controller.create(film2);
+        filmStorage.create(film1);
+        filmStorage.create(film2);
 
-        Collection<Film> films = controller.getAll();
+        Collection<Film> films = filmStorage.getAll();
 
         assertEquals(2, films.size());
     }
