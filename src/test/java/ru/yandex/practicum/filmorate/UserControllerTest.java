@@ -7,9 +7,10 @@ import jakarta.validation.ValidatorFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import ru.yandex.practicum.filmorate.controller.UserController;
 import ru.yandex.practicum.filmorate.exception.*;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.storage.user.InMemoryUserStorage;
+import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 import ru.yandex.practicum.filmorate.validator.Marker;
 
 import java.time.LocalDate;
@@ -21,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class UserControllerTest {
 
     private static Validator validator;
-    UserController controller;
+    UserStorage userStorage;
     User user;
 
     @BeforeEach
@@ -29,7 +30,7 @@ public class UserControllerTest {
         ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
         validator = validatorFactory.getValidator();
 
-        controller = new UserController();
+        userStorage = new InMemoryUserStorage();
 
         user = new User();
         user.setEmail("@Email");
@@ -53,7 +54,7 @@ public class UserControllerTest {
     @Test
     @DisplayName("Проверка на существование электронного адреса")
     void shouldThrowIfEmailExists() {
-        controller.create(user);
+        userStorage.create(user);
 
         User user2 = new User();
         user2.setEmail("@Email");
@@ -63,7 +64,7 @@ public class UserControllerTest {
 
         DuplicatedDataException exception = assertThrows(
                 DuplicatedDataException.class,
-                () -> controller.create(user2)
+                () -> userStorage.create(user2)
         );
 
         assertEquals("Эта электронная почта уже используется", exception.getMessage());
@@ -86,7 +87,7 @@ public class UserControllerTest {
     void shouldReplaceEmptyNameWithLogin() {
         user.setName("  ");
 
-        User user1 = controller.create(user);
+        User user1 = userStorage.create(user);
 
         assertEquals(user1.getLogin(), user1.getName());
     }
@@ -122,7 +123,7 @@ public class UserControllerTest {
 
         NotFoundException exception = assertThrows(
                 NotFoundException.class,
-                () -> controller.update(user)
+                () -> userStorage.update(user)
         );
 
         assertEquals("Пользователь с id = " + user.getId() + " не найден", exception.getMessage());
@@ -154,10 +155,10 @@ public class UserControllerTest {
         user2.setName("name");
         user.setBirthday(LocalDate.of(2000, 10, 10));
 
-        controller.create(user1);
-        controller.create(user2);
+        userStorage.create(user1);
+        userStorage.create(user2);
 
-        Collection<User> users = controller.getAll();
+        Collection<User> users = userStorage.getAll();
 
         assertEquals(2, users.size());
     }
