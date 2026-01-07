@@ -1,19 +1,14 @@
 package ru.yandex.practicum.filmorate.model.film;
 
-public enum Mpa {
-    G("G"),
-    PG("PG"),
-    PG_13("PG-13"),
-    R("R"),
-    NC_17("NC-17");
+import lombok.*;
 
-    private final String title;
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@EqualsAndHashCode(of = "id")
+public class Mpa {
 
-    Mpa(String title) {
-        this.title = title;
-    }
-
-    public String getTitle() {
-        return title;
-    }
+    private Long id;
+    private String name;
 }
