@@ -10,10 +10,7 @@ import ru.yandex.practicum.filmorate.validator.Marker;
 import ru.yandex.practicum.filmorate.validator.release.ValidReleaseDate;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Модель данных фильма.
@@ -56,7 +53,7 @@ public class Film {
 
     private Set<Long> likes = new HashSet<>();
 
-    private List<Genre> genres = new ArrayList<>();
+    private LinkedHashSet<Genre> genres = new LinkedHashSet<>();
 
     private Mpa mpa;
 }

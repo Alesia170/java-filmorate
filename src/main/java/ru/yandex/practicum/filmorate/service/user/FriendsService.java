@@ -32,26 +32,18 @@ public class FriendsService {
     }
 
     public void confirm(Long userId, Long friendId) {
-
+        validateUsers(userId, friendId);
         friendsStorage.confirm(friendId, userId);
     }
 
     public List<User> getFriends(Long userId) {
-        userStorage.getById(userId)
-                .orElseThrow(() -> new NotFoundException("Пользователь с id= " + userId + " не найден"));
-        return friendsStorage.getFriends(userId).stream()
-                .map(id -> userStorage.getById(id)
-                        .orElseThrow(() -> new NotFoundException("Пользователь не найден")))
-                .toList();
+        validateUser(userId);
+        return friendsStorage.getFriends(userId);
     }
 
     public List<User> getCommonFriends(Long userId, Long friendId) {
         validateUsers(userId, friendId);
-
-        return friendsStorage.getCommonFriends(userId, friendId).stream()
-                .map(id -> userStorage.getById(id)
-                        .orElseThrow(() -> new NotFoundException("Пользователь не найден")))
-                .toList();
+        return friendsStorage.getCommonFriends(userId, friendId);
     }
 
     public void deleteFriend(Long userId, Long friendId) {
@@ -64,5 +56,10 @@ public class FriendsService {
                 .orElseThrow(() -> new NotFoundException("Пользователь с id= " + userId + " не найден"));
         userStorage.getById(friendId)
                 .orElseThrow(() -> new NotFoundException("Пользователь с id=" + friendId + " не найден"));
+    }
+
+    private void validateUser(Long userId) {
+        userStorage.getById(userId)
+                .orElseThrow(() -> new NotFoundException("Пользователь не найден"));
     }
 }
