@@ -1,14 +1,17 @@
 package ru.yandex.practicum.filmorate.storage.film;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.film.Film;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Component
 @Slf4j
+@Qualifier("inMemoryFilm")
 public class InMemoryFilmStorage implements FilmStorage {
 
     /**
@@ -77,6 +80,14 @@ public class InMemoryFilmStorage implements FilmStorage {
     @Override
     public Collection<Film> getAll() {
         return new ArrayList<>(films.values());
+    }
+
+    @Override
+    public List<Film> getTopFilms(int count) {
+        return films.values().stream()
+                .sorted(Comparator.comparingInt((Film film) -> film.getLikes().size()).reversed())
+                .limit(count)
+                .collect(Collectors.toList());
     }
 
     /**

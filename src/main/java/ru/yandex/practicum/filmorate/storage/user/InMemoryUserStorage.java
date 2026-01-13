@@ -1,6 +1,7 @@
 package ru.yandex.practicum.filmorate.storage.user;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import ru.yandex.practicum.filmorate.exception.DuplicatedDataException;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
@@ -10,6 +11,7 @@ import java.util.*;
 
 @Component
 @Slf4j
+@Qualifier("inMemoryUser")
 public class InMemoryUserStorage implements UserStorage {
 
     /**
